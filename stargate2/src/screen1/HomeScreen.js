@@ -1,64 +1,57 @@
-import React, { Component } from 'react'
+import React, { useState } from 'react'
 import { View } from 'react-native'
-import { connect } from 'react-redux'
-import { searchChanged, getMovies } from '../actions'
+import { useQuery } from 'react-apollo-hooks'
+import gql from 'graphql-tag'
 import { Header, Layout, ImageCard, Search } from '../components/uikit'
 import { STARGATE_DETAILS } from '../routes'
 
-class HomeScreen extends Component {
-  state = {
-    visibleSearchbar: false
+const GET_SHOWS = gql`
+  query($search: String!) {
+    shows(search: $search) @rest(type: "Person", path: "search/shows?q={args.search}") {
+      show @type(name: "Show") {
+        id
+        name
+        summary
+        image @type(name: "Image") {
+          medium
+          original
+        }
+      }
+    }
   }
+`
 
-  onSearchChange = text => {
-    this.props.searchChanged(text)
-    this.props.getMovies(text)
-  }
+const HomeScreen = ({ navigation }) => {
+  const [value, setValue] = useState('StarGate')
+  const [visible, setVisible] = useState(false)
+  const { data, loading } = useQuery(GET_SHOWS, { variables: { search: value } })
 
-  render() {
-    const { visibleSearchbar } = this.state
-    const { navigation, movie, data } = this.props
-    //console.log('this.props', this.props)
-    return (
-      <View>
-        {visibleSearchbar ? (
-          <Search
-            colorRight="#fff"
-            iconRight="magnify"
-            placeholder="Search"
-            onChangeText={this.onSearchChange}
-            value={movie}
-            onPressRight={() => this.setState({ visibleSearchbar: false })}
-            onBlur={() => this.setState({ visibleSearchbar: false })}
-          />
-        ) : (
-          <Header
-            title={movie || 'Search'}
-            colorRight="#fff"
-            iconRight="magnify"
-            onPressRight={() => this.setState({ visibleSearchbar: true })}
-          />
-        )}
-        <Layout>
-          {data.map(item => (
-            <ImageCard
-              data={item.show}
-              key={item.show.id}
-              onPress={() => navigation.navigate(STARGATE_DETAILS, { show: item.show })}
-            />
+  const onScreen = (screen, show) => () => navigation.navigate(screen, show)
+  const onPress = i => () => setVisible(i)
+  const onSearchChange = text => setValue(text)
+
+  return (
+    <View>
+      {visible ? (
+        <Search
+          colorRight="#fff"
+          iconRight="magnify"
+          placeholder="Search"
+          onChangeText={onSearchChange}
+          onPressRight={onPress(false)}
+          onBlur={onPress(false)}
+        />
+      ) : (
+        <Header title={value} colorRight="#fff" iconRight="magnify" onPressRight={onPress(true)} />
+      )}
+      <Layout>
+        {!loading &&
+          data.shows.map(item => (
+            <ImageCard data={item.show} key={item.show.id} onPress={onScreen(STARGATE_DETAILS, { show: item.show })} />
           ))}
-        </Layout>
-      </View>
-    )
-  }
+      </Layout>
+    </View>
+  )
 }
 
-const mapStateToProps = state => ({
-  movie: state.search.movie,
-  data: state.search.data
-})
-
-export default connect(
-  mapStateToProps,
-  { searchChanged, getMovies }
-)(HomeScreen)
+export default HomeScreen

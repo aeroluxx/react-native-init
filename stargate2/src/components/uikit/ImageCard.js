@@ -32,7 +32,7 @@ const styles = StyleSheet.create({
 const ImageCard = ({ data, onPress }) => {
   const { container, sub, h1, cover } = styles
   const { image, name } = data
-  const img = image === null ? 'http://fcrmedia.ie/wp-content/themes/fcr/assets/images/default.jpg' : image
+  const img = image === null ? 'http://fcrmedia.ie/wp-content/themes/fcr/assets/images/default.jpg' : image.medium
   return (
     <TouchableOpacity onPress={onPress}>
       <View style={container}>
